@@ -1,7 +1,7 @@
 # ymdflag #
 
 [![Units tests](https://github.com/neomantra/ymdflag/actions/workflows/unit_tests.yaml/badge.svg)](https://github.com/neomantra/ymdflag/actions/workflows/unit_tests.yaml)
-[![Coverage Status](https://coveralls.io/repos/neomantra/ymdflag/badge.svg?branch=master&service=github)](https://coveralls.io/github/neomantra/ymdflag?branch=master)
+[![Coverage Status](https://coveralls.io/repos/neomantra/ymdflag/badge.svg?branch=main&service=github)](https://coveralls.io/github/neomantra/ymdflag?branch=main)
 [![golangci-lint](https://github.com/neomantra/ymdflag/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/neomantra/ymdflag/actions/workflows/golangci-lint.yaml)
 [![CodeQL](https://github.com/neomantra/ymdflag/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/neomantra/ymdflag/actions/workflows/codeql-analysis.yml)
 [![Go ReportCard](https://goreportcard.com/badge/neomantra/ymdflag)](http://goreportcard.com/report/neomantra/ymdflag)
