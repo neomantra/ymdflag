@@ -34,6 +34,6 @@ func TestNonMutatingMethods(t *testing.T) {
 	var dirPath = ymdFlag.AsDirPathNoCheck()
 	assert.Equal(t, "2020/01/02", dirPath, "should match given date")
 
-	var timeValue = ymdFlag.AsUTCTimeNoCheck()
+	var timeValue = ymdFlag.AsTimeNoCheck()
 	assert.Equal(t, time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC), timeValue, "should not have a time component")
 }
