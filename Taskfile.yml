@@ -1,0 +1,61 @@
+version: '3'
+
+tasks:
+  default:
+    deps:
+      - test
+      - build:examples
+
+  tidy:
+    cmds:
+      - go mod tidy
+
+  update:
+    cmds:
+      - go get -u ./...
+
+  clean:
+    cmds:
+      - rm -f bin/*
+
+  test:
+    cmds:
+      - go test -v
+    sources:
+      - "**/*.go"
+
+  build:examples:
+    deps:
+      - build:pflag-loc
+      - build:pflag-simple
+      - build:pflag-start-end
+
+  build:pflag-loc:
+    deps: [tidy]
+    cmds:
+      - go build -o bin/pflag-loc examples/pflag-loc/main.go
+    sources:
+      - examples/pflag-loc/main.go
+      - "*.go"
+    generates:
+      - bin/plfag-log
+
+  build:pflag-simple:
+    deps: [tidy]
+    cmds:
+      - go build -o bin/pflag-simple examples/pflag-simple/main.go
+    sources:
+      - examples/pflag-simple/main.go
+      - "*.go"
+    generates:
+      - bin/plfag-log
+
+  build:pflag-start-end:
+    deps: [tidy]
+    cmds:
+      - go build -o bin/plfag-start-end examples/pflag-start-end/main.go
+    sources:
+      - examples/pflag-start-end/main.go
+      - "*.go"
+    generates:
+      - bin/plfag-start-end
