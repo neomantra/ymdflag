@@ -4,7 +4,7 @@ tasks:
   default:
     deps:
       - test
-      - build:examples
+      - build
 
   tidy:
     cmds:
@@ -24,21 +24,14 @@ tasks:
     sources:
       - "**/*.go"
 
+  build:
+    deps:
+      - build:examples
+      
   build:examples:
     deps:
-      - build:pflag-loc
       - build:pflag-simple
       - build:pflag-start-end
-
-  build:pflag-loc:
-    deps: [tidy]
-    cmds:
-      - go build -o bin/pflag-loc examples/pflag-loc/main.go
-    sources:
-      - examples/pflag-loc/main.go
-      - "*.go"
-    generates:
-      - bin/plfag-log
 
   build:pflag-simple:
     deps: [tidy]
@@ -48,7 +41,7 @@ tasks:
       - examples/pflag-simple/main.go
       - "*.go"
     generates:
-      - bin/plfag-log
+      - bin/plfag-simple
 
   build:pflag-start-end:
     deps: [tidy]

@@ -7,7 +7,7 @@
 [![Go ReportCard](https://goreportcard.com/badge/neomantra/ymdflag)](http://goreportcard.com/report/neomantra/ymdflag)
 [![Go Reference](https://pkg.go.dev/badge/github.com/neomantra/ymdflag.svg)](https://pkg.go.dev/github.com/neomantra/ymdflag)
 
-[`YMDFlag`](https://github.com/neomantra/ymdflag) implements a Golang [`flag.Value`](https://pkg.go.dev/flag#Value) interface for `YYYYMMDD`-specified dates with location..   This facilitiates command-line argument handling of date parameters such  `-start-date=20210101`.
+[`YMDFlag`](https://github.com/neomantra/ymdflag) implements a Golang [`flag.Value`](https://pkg.go.dev/flag#Value) interface for `YYYYMMDD`-specified dates.   This facilitiates command-line argument handling of date parameters such  `-start-date=20210101`.
 
 ## Documentation ##
 

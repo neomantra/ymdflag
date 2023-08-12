@@ -4,7 +4,6 @@ package ymdflag
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 	"unicode"
@@ -15,26 +14,27 @@ import (
 // To faciliates the use of YMD dates in command line flags, it implements the
 // [flag.Value interface], making it compatible with the [flag] and [pflag] packages.
 //
-// It has a `yyyymmddd` integral part and a `loc` location part.
-// if the `yyyymmdd` part is 0, that implies a date fetch on the first request for the time.
-// If the location is nil, then the local timezone is used.  Otherwise, it is used when
-// extracting times from the YMDFlag.
+// It stores an integral `yyyymmddd`.  The special value of 0 indicates that the value
+// is indeterminate and may be may be auto-populated by `UpdateNilToNow`, `AsTime`, or `AsTimeWithLoc`.
 //
 // [flag.Value interface]: https://pkg.go.dev/flag#Value
 // [flag]: https://pkg.go.dev/flag
 // [pflag]: https://pkg.go.dev/github.com/spf13/pflag
 type YMDFlag struct {
-	yyyymmdd int            // internal yyyymmdd value, nil values might be mutated
-	loc      *time.Location // internal location value, nil value means local time
+	yyyymmdd int // internal yyyymmdd value, nil values might be mutated
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // TODO: internal error consts how?
 
-// YMDtoTime returns the Time corresponding to the YYYYMMDD in the specified location.
+// YMDtoTime returns the Time corresponding to the YYYYMMDD in the specified location, without validating the argument.`
+// A value of 0 returns a Zero Time, independent of location.
 // A nil location implies local time.
 func YMDToTime(yyyymmdd int, loc *time.Location) time.Time {
+	if yyyymmdd == 0 {
+		return time.Time{}
+	}
 	var year int = yyyymmdd / 10000
 	var month int = (yyyymmdd % 10000) / 100
 	var day int = yyyymmdd % 100
@@ -54,7 +54,31 @@ func TimeToYMD(t time.Time) int {
 	}
 }
 
-// ValidateYMD returns nil if the passed `yyyymmdd` is of a proper YYYYMMDD form.  Zero is a valid value, indicating auto-detection.
+// StringToYMD returns an integral YYYYMMDD value or 0 for an empty string.
+// If the string is invalid, an error is returned.
+func StringToYMD(str string) (int, error) {
+	// default value (empty string) is 0
+	if str == "" {
+		return 0, nil
+	}
+
+	if len(str) != 8 || !isInt(str) {
+		return 0, fmt.Errorf("expect string of format YYYYMMDD")
+	}
+
+	yyyymmdd, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert string %w", err)
+	}
+
+	if err := ValidateYMD(yyyymmdd); err != nil {
+		return 0, fmt.Errorf("failed to validate string %w", err)
+	}
+	return yyyymmdd, nil
+}
+
+// ValidateYMD returns nil if the passed `yyyymmdd` is of a proper YYYYMMDD form.
+// Zero is a valid value, meaning indeindicating potential auto-detection.
 // Otherwise, returns an error.
 // This function is not forgiving like `time.Date`, e.g. 10/32 (Oct 32) is not considered 11/01 (Nov 1).
 func ValidateYMD(yyyymmdd int) error {
@@ -75,6 +99,16 @@ func ValidateYMD(yyyymmdd int) error {
 	return nil
 }
 
+// AsDirPath returns the YMDFlag as `"YYYY/MM/DD"` using given path seperator
+// If the YMDFlag is nil, then an empty string is returned.
+func FormatDirPath(ymd YMDFlag, separator rune) string {
+	if ymd.IsZero() {
+		return ""
+	}
+	year, month, day := ymd.AsYearMonthDay()
+	return fmt.Sprintf("%04d%c%02d%c%02d", year, separator, month, separator, day)
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // flag.Value interface
 
@@ -84,34 +118,21 @@ func (*YMDFlag) Type() string {
 }
 
 // String implements the flag.Value interface.
-// If the YMDFlag is nil, then a date fetch occurs,
-// updating it to the current local date.
+// If the YMDFlag is nil, then an empty string is returned.
 func (ymd *YMDFlag) String() string {
-	ymd.UpdateNilToNow()
-	return strconv.Itoa(ymd.yyyymmdd)
+	return ymd.AsYMDString()
 }
 
 // Set implements the flag.Value interface.
-// The default value of empty string `""` is the current local date.
+// The default value of empty string `""` implies it is unset
+// and may be auto-filled by some methods.
 func (ymd *YMDFlag) Set(value string) error {
-	// default value (empty string) is today
-	if len(value) == 0 {
-		ymd.yyyymmdd = 0
-		ymd.UpdateNilToNow()
-		return nil
-	}
-	if len(value) != 8 || !isInt(value) {
-		return fmt.Errorf("expect string of format YYYYMMDD")
-	}
-	loc := ymd.loc
-	if loc == nil {
-		loc = time.Local
-	}
-	t, err := time.ParseInLocation("20060102", value, loc)
+	// convert value to YMD int
+	yyyymmdd, err := StringToYMD(value)
 	if err != nil {
 		return err
 	}
-	ymd.yyyymmdd = TimeToYMD(t)
+	ymd.yyyymmdd = yyyymmdd
 	return nil
 }
 
@@ -122,23 +143,16 @@ func (ymd *YMDFlag) Set(value string) error {
 func NewYMDFlag(t time.Time) YMDFlag {
 	var ymd YMDFlag
 	ymd.yyyymmdd = TimeToYMD(t)
-	ymd.loc = t.Location()
 	return ymd
-}
-
-// NewYMDFlagWithLocation creates a new nil YMDFlag with the given location.
-// This allows preparing a YMDFlag for a specific location before using in a `pflag` function call.
-func NewYMDFlagWithLocation(loc *time.Location) YMDFlag {
-	return YMDFlag{yyyymmdd: 0, loc: loc}
 }
 
 // NewYMDFlag creates a new YMDFlag for the given integral `YYYYMMDD` value, for example `20230704`.
 // Returns a non-nil error if YMDFlag is malformed.  `0` is a valid value.
-func NewYMDFlagFromInt(i int, loc *time.Location) (YMDFlag, error) {
+func NewYMDFlagFromInt(i int) (YMDFlag, error) {
 	if err := ValidateYMD(i); err != nil {
 		return YMDFlag{}, err
 	}
-	return YMDFlag{yyyymmdd: i, loc: loc}, nil
+	return YMDFlag{yyyymmdd: i}, nil
 }
 
 // GetYMD returns the YMDFlag as integer `YYYYMMDD`.  It may be zero.
@@ -146,78 +160,68 @@ func (ymd YMDFlag) GetYMD() int {
 	return ymd.yyyymmdd
 }
 
-// GetLocation returns the location of the YMDFlag.  It may be nil.
-func (ymd YMDFlag) GetLocation() *time.Location {
-	return ymd.loc
-}
-
-// SetLocation sets the location of the YMDFlag, which affects future calls to AsTime.
-func (ymd *YMDFlag) SetLocation(loc *time.Location) {
-	ymd.loc = loc
-}
-
 // IsZero returns true if the YMDFlag is nil.  The location is ignored in this case.
 func (ymd YMDFlag) IsZero() bool {
 	return (ymd.yyyymmdd == 0)
 }
 
-// AsYMD returns the YMDFlag as integer `YYYYMMDD`.
-// If the YMDFlag is nil, then a date fetch occurs, updating it to the current date according to the YMDFlag timezone.
-func (ymd *YMDFlag) AsYMD() int {
-	ymd.UpdateNilToNow()
+// AsYMD returns the YMDFlag as integer `YYYYMMDD`.  Returns 0 if the YMDFlag is nil.
+func (ymd YMDFlag) AsYMD() int {
 	return ymd.yyyymmdd
 }
 
-// AsYMDString returns the YMDFlag as string `"YYYYMMDD"`
-// If the YMDFlag is nil, then a date fetch occurs, updating it to the current date according to the YMDFlag timezone.
-func (ymd *YMDFlag) AsYMDString() string {
-	return strconv.Itoa(ymd.AsYMD())
-}
-
-// AsDirPath returns the YMDFlag as `"YYYY/MM/DD"` using the OS path seperator
-// If the YMDFlag is nil, then a date fetch occurs, updating it to the current date according to the YMDFlag timezone.
-func (ymd *YMDFlag) AsDirPath() string {
-	return formatDirPath(ymd.AsTime(), os.PathSeparator)
-}
-
-// AsDirPath returns the YMDFlag as `"YYYY/MM/DD"` using given path seperator
-// If the YMDFlag is nil, then a date fetch occurs, updating it to the current date according to the YMDFlag timezone.
-func (ymd *YMDFlag) AsDirPathSep(separator rune) string {
-	return formatDirPath(ymd.AsTime(), separator)
-}
-
-// AsTime returns the YMDFlag as a time.Time in the YMDFlag's location.
-// If the YMDFlag's location is nil, then the local timezone is used.
-// If the YMDFlag's YMD is 0, then a date fetch occurs, updating it to the current local date.
-func (ymd *YMDFlag) AsTime() time.Time {
-	ymd.UpdateNilToNow()
-	return YMDToTime(ymd.yyyymmdd, ymd.loc)
-}
-
-// AsTimeNoCheck returns the YMDFlag as time.Time in the YMDFlag's location.
-// If the YMDFlag's location is nil, then the local timezone is used.
-// NOTE: This method does not check if zeroed.  Ensure you call it with a non-zero YMDFlag.
-func (ymd YMDFlag) AsTimeNoCheck() time.Time {
-	return YMDToTime(ymd.yyyymmdd, ymd.loc)
-}
-
-// UpdateNilToNow updates a nil YMDFlag to the current local date.
-func (ymd *YMDFlag) UpdateNilToNow() {
+// AsYMDString returns the YMDFlag as string `"YYYYMMDD"`.  If the YMDFlag is nil, it returns the empty string.
+func (ymd YMDFlag) AsYMDString() string {
 	if ymd.yyyymmdd == 0 {
-		now := time.Now()
-		if ymd.loc != nil {
-			now = now.In(ymd.loc)
-		}
-		ymd.yyyymmdd = TimeToYMD(now)
+		return ""
 	}
+	return strconv.Itoa(ymd.yyyymmdd)
+}
+
+// AsYearMonthDay returns the YMDFlag decomposed into Year, Month, and Day.
+// All values of 0 will be returned if the YMDFlag is 0
+func (ymd YMDFlag) AsYearMonthDay() (int, int, int) {
+	if ymd.IsZero() {
+		return 0, 0, 0
+	}
+	var year int = ymd.yyyymmdd / 10000
+	var month int = (ymd.yyyymmdd % 10000) / 100
+	var day int = ymd.yyyymmdd % 100
+	return year, month, day
+}
+
+// UpdateNilToNow updates a nil YMDFlag (with `yyyymmdd` == 0) to the current date in the specified location.
+// If location is nil, local time is used.
+// If `yyyymmdd` is not nil, then this method does nothing.
+func (ymd *YMDFlag) UpdateNilToNow(location *time.Location) {
+	if ymd.yyyymmdd != 0 {
+		return
+	}
+	now := time.Now()
+	if location != nil {
+		now = now.In(location)
+	}
+	ymd.yyyymmdd = TimeToYMD(now)
+}
+
+// AsTime returns the YMDFlag as a `time.Time“ in local time.  Use `AsTimeWithLoc` to specify a location.
+// If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned.
+func (ymd *YMDFlag) AsTime() time.Time {
+	return ymd.AsTimeWithLoc(nil)
+}
+
+// AsTime returns the YMDFlag as a `time.Time` in the specified location.
+// If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned.
+// If `location“ is nil, then `time.Local` is used.
+func (ymd *YMDFlag) AsTimeWithLoc(location *time.Location) time.Time {
+	if location == nil {
+		location = time.Local
+	}
+	ymd.UpdateNilToNow(location)
+	return YMDToTime(ymd.yyyymmdd, location)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
-// formatDirPath returns the `time` as `"YYYY/MM/DD"` using the given path seperator.
-func formatDirPath(time time.Time, sep rune) string {
-	return time.Format(fmt.Sprintf("2006%c01%c02", sep, sep))
-}
 
 // isInt checks if a string can be converted safely to an int
 func isInt(value string) bool {
