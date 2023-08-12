@@ -31,9 +31,9 @@ func Test_uninitializaed_flag_becomes_today_when_accessed(t *testing.T) {
 func TestNonMutatingMethods(t *testing.T) {
 	ymdFlag := NewYMDFlag(time.Date(2020, time.January, 2, 1, 2, 3, 4, time.UTC))
 
-	var dirPath = ymdFlag.AsDirPathNoCheck()
-	assert.Equal(t, "2020/01/02", dirPath, "should match given date")
-
 	var timeValue = ymdFlag.AsTimeNoCheck()
 	assert.Equal(t, time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC), timeValue, "should not have a time component")
+
+	var dirPath = formatDirPath(timeValue, '/')
+	assert.Equal(t, "2020/01/02", dirPath, "should match given date path")
 }
