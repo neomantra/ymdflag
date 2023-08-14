@@ -13,8 +13,8 @@ func TestYMDFlag(t *testing.T) {
 	var ymdFlag YMDFlag
 
 	assert.True(t, ymdFlag.IsZero())
-	assert.NotPanics(t, func() { ymdFlag.AsTime() })
-	assert.NotPanics(t, func() { ymdFlag.AsYMD() })
+	assert.NotPanics(t, func() { _ = ymdFlag.AsTime() })
+	assert.NotPanics(t, func() { _ = ymdFlag.AsYMD() })
 }
 
 func Test_uninitializaed_flag_becomes_today_when_accessed(t *testing.T) {
