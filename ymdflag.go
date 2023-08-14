@@ -44,7 +44,7 @@ func YMDToTime(yyyymmdd int, loc *time.Location) time.Time {
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, loc)
 }
 
-// TimeToYMD returns the YYYYMMDD for the Time in its location.
+// TimeToYMD returns the YYYYMMDD for the time.Time in that Time's location.
 // A zero time returns a 0 value.
 func TimeToYMD(t time.Time) int {
 	if t.IsZero() {
