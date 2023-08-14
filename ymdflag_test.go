@@ -37,3 +37,32 @@ func TestNonMutatingMethods(t *testing.T) {
 	var dirPath = FormatDirPath(ymdFlag, '/')
 	assert.Equal(t, "2020/01/02", dirPath, "should match given date path")
 }
+
+func TestValidateYMD(t *testing.T) {
+	err := ValidateYMD(20220101)
+	assert.NoError(t, err, "valid date should not return an error")
+
+	err = ValidateYMD(0)
+	assert.NoError(t, err, "zero is ok")
+
+	err = ValidateYMD(20240229)
+	assert.NoError(t, err, "leap day is ok")
+
+	err = ValidateYMD(20230229)
+	assert.Error(t, err, "leap day on wrong year is not ok")
+
+	err = ValidateYMD(209901231)
+	assert.Error(t, err, "has more than 8 digits")
+
+	err = ValidateYMD(010101)
+	assert.Error(t, err, "too few digits")
+
+	err = ValidateYMD(20221301)
+	assert.Error(t, err, "invalid month")
+
+	err = ValidateYMD(20221241)
+	assert.Error(t, err, "invalid day")
+
+	err = ValidateYMD(-1)
+	assert.Error(t, err, "negative date")
+}
