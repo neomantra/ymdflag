@@ -12,7 +12,7 @@ tasks:
 
   update:
     cmds:
-      - go get -u ./...
+      - go get -u -t ./...
 
   clean:
     cmds:
