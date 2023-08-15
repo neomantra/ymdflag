@@ -17,6 +17,25 @@ go get github.com/neomantra/ymdflag
 
 https://pkg.go.dev/github.com/neomantra/ymdflag
 
+## Examples ##
+
+There are examples in the [`examples/` directory](./examples). Here's a quick sketch:
+
+```go
+package main
+
+import (
+	"github.com/neomantra/ymdflag"
+	"github.com/spf13/pflag"
+)
+
+func main() {
+	var ymd ymdflag.YMDFlag
+	pflag.VarP(&ymd, "date", "d", "YYYYMMDD date; defaults to today in local time")
+	pflag.Parse()
+	println("time of date:", ymd.AsTime().String())
+}
+```
 ----
 
 ## Credits and License
