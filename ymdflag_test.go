@@ -112,3 +112,11 @@ func TestStringToYMD(t *testing.T) {
 	assert.NoError(t, err, "empty string should not return an error")
 	assert.Equal(t, 0, yyyymmdd)
 }
+
+func TestAsDirPath(t *testing.T) {
+
+	flag := NewYMDFlag(time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC))
+	path := flag.AsDirPath()
+
+	assert.Equal(t, "2022/01/02", path)
+}

@@ -101,6 +101,12 @@ func ValidateYMD(yyyymmdd int) error {
 
 // AsDirPath returns the YMDFlag as `"YYYY/MM/DD"` using given path seperator
 // If the YMDFlag is nil, then an empty string is returned.
+func (ymd YMDFlag) AsDirPath() string {
+	return FormatDirPath(ymd, '/')
+}
+
+// FormatDirPath returns the YMDFlag as `"YYYY{separator}MM{separator}DD"` using given path seperator
+// If the YMDFlag is nil, then an empty string is returned.
 func FormatDirPath(ymd YMDFlag, separator rune) string {
 	if ymd.IsZero() {
 		return ""
