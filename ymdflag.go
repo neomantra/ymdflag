@@ -205,19 +205,29 @@ func (ymd *YMDFlag) UpdateNilToNow(location *time.Location) {
 }
 
 // AsTime returns the YMDFlag as a `time.Time“ in local time.  Use `AsTimeWithLoc` to specify a location.
-// If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned.
+// If the YMDFlag's `yyyymmdd` is 0, then the YMDFlag is updated with the current date in the Local timezone.
 func (ymd *YMDFlag) AsTime() time.Time {
 	return ymd.AsTimeWithLoc(nil)
 }
 
-// AsTime returns the YMDFlag as a `time.Time` in the specified location.
-// If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned.
+// AsTimeWithLoc returns the YMDFlag as a `time.Time` in the specified location.
+// If the YMDFlag's `yyyymmdd` is 0, then the YMDFlag is updated with the current date in the specified location.
 // If `location“ is nil, then `time.Local` is used.
 func (ymd *YMDFlag) AsTimeWithLoc(location *time.Location) time.Time {
 	if location == nil {
 		location = time.Local
 	}
 	ymd.UpdateNilToNow(location)
+	return YMDToTime(ymd.yyyymmdd, location)
+}
+
+// AsTimeRawWithLoc returns the YMDFlag as a `time.Time` in the specified location.
+// If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned. No auto-update is performed.
+// If `location“ is nil, then `time.Local` is used.
+func (ymd *YMDFlag) AsTimeRawWithLoc(location *time.Location) time.Time {
+	if location == nil {
+		location = time.Local
+	}
 	return YMDToTime(ymd.yyyymmdd, location)
 }
 
