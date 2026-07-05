@@ -91,6 +91,95 @@ func TestNewFlagFromInt(t *testing.T) {
 	assert.Equal(t, 0, year)
 	assert.Equal(t, 0, month)
 	assert.Equal(t, 0, day)
+
+	flag, err = NewYMDFlagFromInt(20220102)
+	assert.NoError(t, err, "valid date is ok")
+	assert.Equal(t, 20220102, flag.AsYMD())
+
+	_, err = NewYMDFlagFromInt(20221301)
+	assert.Error(t, err, "invalid month should return an error")
+
+	_, err = NewYMDFlagFromInt(-1)
+	assert.Error(t, err, "negative should return an error")
+}
+
+func TestFlagValueRoundTrip(t *testing.T) {
+	var flag YMDFlag
+
+	// Type is used by pflag to describe the flag
+	assert.Equal(t, "YMDFlag", flag.Type())
+
+	// zero value stringifies to empty
+	assert.Equal(t, "", flag.String())
+
+	err := flag.Set("20220102")
+	assert.NoError(t, err, "valid date should Set without error")
+	assert.Equal(t, 20220102, flag.AsYMD())
+	assert.Equal(t, "20220102", flag.String())
+
+	err = flag.Set("")
+	assert.NoError(t, err, "empty string clears the flag")
+	assert.True(t, flag.IsZero())
+
+	err = flag.Set("2022-01-02")
+	assert.Error(t, err, "invalid format should return an error")
+}
+
+func TestGetYMD(t *testing.T) {
+	flag := NewYMDFlag(time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC))
+	assert.Equal(t, 20220102, flag.GetYMD())
+	assert.Equal(t, flag.AsYMD(), flag.GetYMD())
+}
+
+func TestFormatDirPathZero(t *testing.T) {
+	assert.Equal(t, "", FormatDirPath(YMDFlag{}, '/'), "zero flag yields empty string")
+	flag := NewYMDFlag(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC))
+	assert.Equal(t, "2022-01-02", FormatDirPath(flag, '-'), "honors the separator")
+}
+
+func TestYMDToTime(t *testing.T) {
+	assert.True(t, YMDToTime(0, time.UTC).IsZero(), "zero yields the zero time")
+
+	tm := YMDToTime(20220102, time.UTC)
+	assert.Equal(t, time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC), tm)
+
+	// nil location implies local time
+	tm = YMDToTime(20220102, nil)
+	assert.Equal(t, time.Local, tm.Location())
+}
+
+func TestTimeToYMD(t *testing.T) {
+	assert.Equal(t, 0, TimeToYMD(time.Time{}), "zero time yields 0")
+	assert.Equal(t, 20220102, TimeToYMD(time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)))
+}
+
+func TestUpdateNilToNow(t *testing.T) {
+	// zero flag becomes today
+	var flag YMDFlag
+	flag.UpdateNilToNow(time.UTC)
+	assert.False(t, flag.IsZero())
+	assert.Equal(t, TimeToYMD(time.Now().In(time.UTC)), flag.AsYMD())
+
+	// a set flag is left untouched
+	set := NewYMDFlag(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC))
+	set.UpdateNilToNow(time.UTC)
+	assert.Equal(t, 20220102, set.AsYMD(), "already-set flag should not change")
+}
+
+func TestAsTimeRawWithLoc(t *testing.T) {
+	// zero flag stays zero — no auto-update, unlike AsTime
+	var flag YMDFlag
+	tm := flag.AsTimeRawWithLoc(time.UTC)
+	assert.True(t, tm.IsZero(), "raw accessor does not auto-populate")
+	assert.True(t, flag.IsZero(), "raw accessor does not mutate the flag")
+
+	set := NewYMDFlag(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC))
+	tm = set.AsTimeRawWithLoc(time.UTC)
+	assert.Equal(t, time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC), tm)
+
+	// nil location implies local time
+	tm = set.AsTimeRawWithLoc(nil)
+	assert.Equal(t, time.Local, tm.Location())
 }
 
 func TestStringToYMD(t *testing.T) {
