@@ -14,8 +14,8 @@ import (
 // To faciliates the use of YMD dates in command line flags, it implements the
 // [flag.Value interface], making it compatible with the [flag] and [pflag] packages.
 //
-// It stores an integral `yyyymmddd`.  The special value of 0 indicates that the value
-// is indeterminate and may be may be auto-populated by `UpdateNilToNow`, `AsTime`, or `AsTimeWithLoc`.
+// It stores an integral `yyyymmdd`.  The special value of 0 indicates that the value
+// is indeterminate and may be auto-populated by `UpdateNilToNow`, `AsTime`, or `AsTimeWithLoc`.
 //
 // [flag.Value interface]: https://pkg.go.dev/flag#Value
 // [flag]: https://pkg.go.dev/flag
@@ -26,9 +26,7 @@ type YMDFlag struct {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// TODO: internal error consts how?
-
-// YMDtoTime returns the Time corresponding to the YYYYMMDD in the specified location, without validating the argument.`
+// YMDToTime returns the Time corresponding to the YYYYMMDD in the specified location, without validating the argument.
 // A value of 0 returns a Zero Time, independent of location.
 // A nil location implies local time.
 func YMDToTime(yyyymmdd int, loc *time.Location) time.Time {
@@ -78,7 +76,7 @@ func StringToYMD(str string) (int, error) {
 }
 
 // ValidateYMD returns nil if the passed `yyyymmdd` is of a proper YYYYMMDD form.
-// Zero is a valid value, meaning indeindicating potential auto-detection.
+// Zero is a valid value, indicating potential auto-detection.
 // Otherwise, returns an error.
 // This function is not forgiving like `time.Date`, e.g. 10/32 (Oct 32) is not considered 11/01 (Nov 1).
 func ValidateYMD(yyyymmdd int) error {
@@ -99,7 +97,7 @@ func ValidateYMD(yyyymmdd int) error {
 	return nil
 }
 
-// AsDirPath returns the YMDFlag as `"YYYY/MM/DD"` using given path seperator
+// FormatDirPath returns the YMDFlag as `"YYYY/MM/DD"` using the given path separator.
 // If the YMDFlag is nil, then an empty string is returned.
 func FormatDirPath(ymd YMDFlag, separator rune) string {
 	if ymd.IsZero() {
@@ -160,7 +158,7 @@ func (ymd YMDFlag) GetYMD() int {
 	return ymd.yyyymmdd
 }
 
-// IsZero returns true if the YMDFlag is nil.  The location is ignored in this case.
+// IsZero returns true if the YMDFlag is the zero value (`yyyymmdd` == 0).
 func (ymd YMDFlag) IsZero() bool {
 	return (ymd.yyyymmdd == 0)
 }
@@ -204,7 +202,7 @@ func (ymd *YMDFlag) UpdateNilToNow(location *time.Location) {
 	ymd.yyyymmdd = TimeToYMD(now)
 }
 
-// AsTime returns the YMDFlag as a `time.Time“ in local time.  Use `AsTimeWithLoc` to specify a location.
+// AsTime returns the YMDFlag as a `time.Time` in local time.  Use `AsTimeWithLoc` to specify a location.
 // If the YMDFlag's `yyyymmdd` is 0, then the YMDFlag is updated with the current date in the Local timezone.
 func (ymd *YMDFlag) AsTime() time.Time {
 	return ymd.AsTimeWithLoc(nil)
@@ -212,7 +210,7 @@ func (ymd *YMDFlag) AsTime() time.Time {
 
 // AsTimeWithLoc returns the YMDFlag as a `time.Time` in the specified location.
 // If the YMDFlag's `yyyymmdd` is 0, then the YMDFlag is updated with the current date in the specified location.
-// If `location“ is nil, then `time.Local` is used.
+// If `location` is nil, then `time.Local` is used.
 func (ymd *YMDFlag) AsTimeWithLoc(location *time.Location) time.Time {
 	if location == nil {
 		location = time.Local
@@ -223,7 +221,7 @@ func (ymd *YMDFlag) AsTimeWithLoc(location *time.Location) time.Time {
 
 // AsTimeRawWithLoc returns the YMDFlag as a `time.Time` in the specified location.
 // If the YMDFlag's `yyyymmdd` is 0, then a zero time in that location is returned. No auto-update is performed.
-// If `location“ is nil, then `time.Local` is used.
+// If `location` is nil, then `time.Local` is used.
 func (ymd *YMDFlag) AsTimeRawWithLoc(location *time.Location) time.Time {
 	if location == nil {
 		location = time.Local
